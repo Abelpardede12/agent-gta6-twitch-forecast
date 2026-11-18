@@ -156,6 +156,17 @@ def fit_curve(comparables):
                          min(_robust_sd(xs), SPREAD_CAP))
         else:
             fitted[h] = FALLBACK[h]
+    # Light 3-point median smoothing of the log-ratio curve: with only about a
+    # dozen clean analogues, the raw hourly medians carry sampling wiggles (an
+    # hour sitting a touch below both neighbours). Smoothing keeps the shape -
+    # dip, rise, evening peak, decay - while the spreads stay per-hour. Checked
+    # leave-one-out on the analogues: no change in pinball loss, cleaner curve.
+    raw_log = {h: math.log(fitted[h][0]) for h in range(2, 25)}
+    for h in range(2, 25):
+        neighbours = [raw_log[h - 1] if h > 2 else raw_log[h],
+                      raw_log[h],
+                      raw_log[h + 1] if h < 24 else raw_log[h]]
+        fitted[h] = (math.exp(statistics.median(neighbours)), fitted[h][1])
     return fitted
 
 
